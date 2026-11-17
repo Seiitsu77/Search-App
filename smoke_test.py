@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 import time
 
-from search_core import AnimeSearchEngine, Filters, sentence_transformer_embedder
+from search_core import AnimeSearchEngine, Filters, minilm_embedder
 
 # (query, substring expected in one of the top-5 titles)
 CASES = [
@@ -28,7 +28,7 @@ MIN_PASS = 6
 
 def main() -> int:
     started = time.perf_counter()
-    engine = AnimeSearchEngine.load(sentence_transformer_embedder())
+    engine = AnimeSearchEngine.load(minilm_embedder())
     print(f"Loaded {engine.count():,} chunks / {len(engine.catalog):,} titles in {time.perf_counter() - started:.1f}s\n")
 
     passed = 0

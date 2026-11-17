@@ -1,0 +1,12 @@
+# Separate light/dark sections keep the app following the viewer's system theme.
+[theme.light]
+primaryColor = "#4f46e5"
+
+[theme.dark]
+primaryColor = "#818cf8"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

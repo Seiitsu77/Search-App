@@ -1,11 +1,13 @@
 """Shared logic for the Anime Compass semantic search app.
 
-Everything the index builder (build_index.py) and the Gradio app (app.py) have
+Everything the index builder (build_index.py) and the Streamlit app (app.py) have
 in common lives here: cleaning catalog rows, chunking synopses, writing chunks
 to Chroma, and turning chunk hits back into ranked anime.
 
 The embedding model is passed in as a plain callable (list of texts -> 2-D
 array of unit vectors), so tests can swap in a tiny offline embedder.
+build_index.py and app.py both use minilm_embedder(), so documents and
+queries are always embedded by the same model.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from typing import Any
 
 import numpy as np
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL_NAME = "all-MiniLM-L6-v2"
 COLLECTION_NAME = "anime_chunks"
 DEFAULT_DB_DIR = Path(__file__).resolve().parent / "chromadb"
 # Per-anime display/filter fields live once in this file instead of being
@@ -29,7 +31,7 @@ DEFAULT_DB_DIR = Path(__file__).resolve().parent / "chromadb"
 DEFAULT_META_PATH = Path(__file__).resolve().parent / "data" / "anime_meta.json"
 
 # Chunking: sentence windows of at most ~CHUNK_CHARS characters, overlapping by
-# one sentence. all-MiniLM-L6-v2 reads at most 256 word pieces; a 700-character
+# one sentence. The embedder reads at most 256 word pieces; a 700-character
 # window plus the one-line header comes to roughly 150-200.
 CHUNK_CHARS = 700
 OVERLAP_SENTENCES = 1
@@ -439,19 +441,19 @@ class AnimeSearchEngine:
         return self._rank(centroid / norm, k, filters, popularity_boost, exclude_ids={int(anime_id)})
 
 
-def sentence_transformer_embedder(model_name: str = MODEL_NAME, batch_size: int = 64) -> Embedder:
-    """Load the sentence-transformers model and wrap it as an Embedder."""
-    from sentence_transformers import SentenceTransformer
+def minilm_embedder() -> Embedder:
+    """all-MiniLM-L6-v2 through Chroma's bundled ONNX runtime.
 
-    model = SentenceTransformer(model_name, device="cpu")
+    Same model, pooling (attention-masked mean), normalization and 256-token
+    limit as sentence-transformers, without installing PyTorch. That keeps the
+    Streamlit Cloud install small and fast. The model (~90 MB) downloads once
+    to ~/.cache/chroma on first use.
+    """
+    from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+
+    model = ONNXMiniLM_L6_V2()
 
     def embed(texts: Sequence[str]) -> np.ndarray:
-        return model.encode(
-            list(texts),
-            batch_size=batch_size,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-            show_progress_bar=False,
-        )
+        return np.asarray(model(list(texts)), dtype=np.float32)
 
     return embed

@@ -1,6 +1,6 @@
 # Builds the Chroma index on a GitHub runner, checks it with real queries, and
-# commits chromadb/ + data/anime_meta.json back to the branch. If an HF_TOKEN
-# repository secret exists, it also deploys the app to the Hugging Face Space.
+# commits chromadb/ + data/anime_meta.json back to the branch. Streamlit
+# Community Cloud then redeploys the app from the new commit.
 name: Build search index
 
 on:
@@ -24,9 +24,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      HF_SPACE: Seiitsu/anime-compass-search
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +63,3 @@ jobs:
           git commit -m "Rebuild Chroma index (${GITHUB_SHA::7})"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - name: Deploy to Hugging Face Space
-        if: env.HF_TOKEN != ''
-        run: python deploy_space.py --space "$HF_SPACE"

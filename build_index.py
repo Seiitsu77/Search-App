@@ -29,7 +29,7 @@ from search_core import (
     DEFAULT_META_PATH,
     MODEL_NAME,
     build_chunks,
-    sentence_transformer_embedder,
+    minilm_embedder,
     write_index,
 )
 
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.db_dir.exists():
         shutil.rmtree(args.db_dir)
     print(f"Loading {MODEL_NAME} ...")
-    embed = sentence_transformer_embedder()
+    embed = minilm_embedder()
 
     started = time.perf_counter()
 
