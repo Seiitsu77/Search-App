@@ -27,11 +27,13 @@ counts. Adult titles are excluded.
   `Cowboy Bebop (TV, 1998). Genres: Action, Sci-Fi. Studio: Sunrise.` A passage from the middle
   of a synopsis therefore still embeds as part of the right show, and titles without a synopsis
   stay findable by title, genre and studio.
-- **Model:** [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
-  (384-dimensional, normalized vectors), the starter notebook's model. It runs through the ONNX
-  build that ships with Chroma, which uses the same mean pooling, normalization and 256-token
-  limit as sentence-transformers. That avoids installing PyTorch, so the Streamlit Cloud install
-  stays small.
+- **Model:** [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5)
+  (384-dimensional, CLS pooling, normalized). It is trained for retrieval: queries get the
+  instruction `Represent this sentence for searching relevant passages: ` and documents are
+  embedded as-is. It replaced the starter notebook's `all-MiniLM-L6-v2` after scoring better
+  on the evaluation below. The official ONNX export runs on onnxruntime, so the app does not
+  need PyTorch and the Streamlit Cloud install stays small. The index records which model built
+  it, and the app always embeds queries with that same model.
 
 ## 3. Chroma vector DB
 
@@ -57,18 +59,28 @@ metadata on every chunk roughly doubled the database size.
 1. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub and click **Create app**.
 2. Pick the repository `Seiitsu77/Search-App`, the branch that contains `chromadb/`, and the main
    file `app.py`. Optionally set a custom URL such as `anime-compass-search`.
-3. Click **Deploy**. The first start downloads the embedding model (~90 MB) and then serves
+3. Click **Deploy**. The first start downloads the embedding model (~130 MB) and then serves
    queries from the committed `chromadb/`.
+
+## Evaluation
+
+`evaluate.py` runs 38 queries with known answers. 22 are phrased like a synopsis ("orphans
+discover they are being raised as food for demons") and 16 like a viewer would put it ("space
+cowboys and jazz music"). It searches with the app's default settings and reports hit@k (the
+right show is in the top k) and MRR@10. Every index rebuild scores the old index and the new
+one, and the new index is committed only if MRR@10 does not drop. The latest scores are in
+`data/evaluation.json`.
 
 ## Files
 
 ```
 chromadb/            persistent Chroma DB (chroma.sqlite3 + HNSW index)
 data/anime_meta.json one row of display/filter fields per anime
+data/evaluation.json latest evaluation scores
 app.py               Streamlit app (loads the Chroma DB)
 search_core.py       cleaning, chunking, Chroma storage, search/ranking
 build_index.py       downloads the catalog, chunks, embeds, writes chromadb/
-smoke_test.py        real-model checks (e.g. a "notebook that kills" query should find Death Note)
+evaluate.py          search-quality evaluation (38 queries with known answers)
 tests/               offline unit tests (tiny hashing embedder, no model download)
 requirements.txt
 .streamlit/config.toml
@@ -79,10 +91,10 @@ requirements.txt
 ```bash
 pip install -r requirements.txt
 python build_index.py   # ~18k titles → chunks → chromadb/ (a few minutes on CPU)
-python smoke_test.py    # optional sanity check
+python evaluate.py      # optional: score search quality
 streamlit run app.py    # http://localhost:8501
 ```
 
 A GitHub Action (`.github/workflows/build-index.yml`) rebuilds the index whenever the build code
-changes, runs the tests and the smoke test, and commits the result. Streamlit Cloud then picks up
+changes, runs the tests, scores old and new index, and commits the result. Streamlit Cloud then picks up
 the new commit automatically.

@@ -15,18 +15,16 @@ import streamlit as st
 from search_core import (
     CHUNK_CHARS,
     DEFAULT_DB_DIR,
+    DEFAULT_EXCLUDED_TYPES,
     DEFAULT_META_PATH,
-    MODEL_NAME,
+    POPULARITY_WEIGHT,
     AnimeSearchEngine,
     Filters,
     Hit,
-    minilm_embedder,
 )
 
 st.set_page_config(page_title="Anime Compass Search", page_icon="🧭", layout="wide")
 
-POPULARITY_WEIGHT = 0.05
-DEFAULT_EXCLUDED_TYPES = {"Music", "Unknown"}
 # Each example was checked on the deployed app: the show it describes ranks in the top 3.
 EXAMPLES = [
     "humanity lives behind giant walls to hide from man-eating giants",
@@ -49,7 +47,8 @@ def get_engine() -> AnimeSearchEngine:
         import build_index
 
         build_index.main(["--db-dir", str(db_dir), "--meta-path", str(meta_path)])
-    return AnimeSearchEngine.load(minilm_embedder(), db_dir=db_dir, meta_path=meta_path)
+    # Queries are embedded with whichever model built the index (recorded in Chroma).
+    return AnimeSearchEngine.load(db_dir=db_dir, meta_path=meta_path)
 
 
 _MD_SPECIAL = re.compile(r"([\\`*_{}\[\]()#+\-.!|~$<>:])")
@@ -151,7 +150,7 @@ st.markdown(
     "Describe a plot, a vibe or a theme in your own words. This semantic search engine finds anime whose "
     "synopses *mean* the same thing, even when they share no keywords. It searches "
     f"**{len(engine.catalog):,}** titles split into **{engine.count():,}** synopsis chunks, embedded with "
-    f"`{MODEL_NAME}` and stored in a Chroma vector database."
+    f"`{engine.model_name}` and stored in a Chroma vector database."
 )
 
 search_tab, similar_tab = st.tabs(["🔎 Search", "✨ More like this"])

@@ -5,9 +5,9 @@ in common lives here: cleaning catalog rows, chunking synopses, writing chunks
 to Chroma, and turning chunk hits back into ranked anime.
 
 The embedding model is passed in as a plain callable (list of texts -> 2-D
-array of unit vectors), so tests can swap in a tiny offline embedder.
-build_index.py and app.py both use minilm_embedder(), so documents and
-queries are always embedded by the same model.
+array of unit vectors), so tests can swap in a tiny offline embedder. The index
+records which model built it, and AnimeSearchEngine.load() embeds queries with
+that same model, so documents and queries can never be embedded differently.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from typing import Any
 
 import numpy as np
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 COLLECTION_NAME = "anime_chunks"
 DEFAULT_DB_DIR = Path(__file__).resolve().parent / "chromadb"
 # Per-anime display/filter fields live once in this file instead of being
@@ -31,13 +31,17 @@ DEFAULT_DB_DIR = Path(__file__).resolve().parent / "chromadb"
 DEFAULT_META_PATH = Path(__file__).resolve().parent / "data" / "anime_meta.json"
 
 # Chunking: sentence windows of at most ~CHUNK_CHARS characters, overlapping by
-# one sentence. The embedder reads at most 256 word pieces; a 700-character
-# window plus the one-line header comes to roughly 150-200.
+# one sentence. A 700-character window plus the one-line header comes to roughly
+# 150-200 word pieces, inside both models' input limits (256 and 512).
 CHUNK_CHARS = 700
 OVERLAP_SENTENCES = 1
 
 # Adult titles are not part of this demo.
 EXCLUDED_GENRES = {"hentai", "erotica"}
+
+# App defaults, shared with evaluate.py so scores reflect what users see.
+POPULARITY_WEIGHT = 0.05
+DEFAULT_EXCLUDED_TYPES = {"Music", "Unknown"}
 
 Embedder = Callable[[Sequence[str]], np.ndarray]
 
@@ -217,8 +221,13 @@ def write_index(
     meta_path: Path | str = DEFAULT_META_PATH,
     batch_size: int = 256,
     progress: Callable[[int, int], None] | None = None,
+    model_name: str = DEFAULT_MODEL,
 ):
-    """Embed chunks into a fresh persistent Chroma collection and save the anime records."""
+    """Embed chunks into a fresh persistent Chroma collection and save the anime records.
+
+    ``model_name`` is stored on the collection so the app embeds queries with
+    the same model that embedded the documents.
+    """
     client = open_client(db_dir)
     try:
         client.delete_collection(COLLECTION_NAME)
@@ -228,7 +237,7 @@ def write_index(
         COLLECTION_NAME,
         embedding_function=None,
         configuration={"hnsw": {"space": "cosine"}},
-        metadata={"model": MODEL_NAME, "chunk_chars": CHUNK_CHARS},
+        metadata={"model": model_name, "chunk_chars": CHUNK_CHARS},
     )
     for start in range(0, len(chunks), batch_size):
         batch = chunks[start : start + batch_size]
@@ -299,6 +308,7 @@ class AnimeSearchEngine:
     """Query the Chroma chunk collection and rank whole anime."""
 
     def __init__(self, collection, catalog: Sequence[Mapping[str, Any]], embedder: Embedder):
+        """``embedder`` embeds queries (any instruction prefix already applied)."""
         self.collection = collection
         self.embedder = embedder
         self.catalog: dict[int, dict[str, Any]] = {int(a["anime_id"]): dict(a) for a in catalog}
@@ -307,13 +317,29 @@ class AnimeSearchEngine:
     @classmethod
     def load(
         cls,
-        embedder: Embedder,
+        embedder: Embedder | None = None,
         db_dir: Path | str = DEFAULT_DB_DIR,
         meta_path: Path | str = DEFAULT_META_PATH,
+        query_prefix: str | None = None,
     ) -> "AnimeSearchEngine":
+        """Open the index. Without an explicit embedder, load the model that built it.
+
+        ``query_prefix`` overrides the model's query instruction (evaluation only).
+        """
         collection = open_client(db_dir).get_collection(COLLECTION_NAME, embedding_function=None)
         catalog = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+        if embedder is None:
+            embedder = query_embedder(cls.index_model(collection), prefix=query_prefix)
         return cls(collection, catalog, embedder)
+
+    @staticmethod
+    def index_model(collection) -> str:
+        # Indexes built before the model was recorded used MiniLM.
+        return str((collection.metadata or {}).get("model") or "all-MiniLM-L6-v2")
+
+    @property
+    def model_name(self) -> str:
+        return self.index_model(self.collection)
 
     # -- catalog helpers ---------------------------------------------------
 
@@ -441,19 +467,104 @@ class AnimeSearchEngine:
         return self._rank(centroid / norm, k, filters, popularity_boost, exclude_ids={int(anime_id)})
 
 
-def minilm_embedder() -> Embedder:
-    """all-MiniLM-L6-v2 through Chroma's bundled ONNX runtime.
+# --------------------------------------------------------------------------
+# Embedding models
+# --------------------------------------------------------------------------
 
-    Same model, pooling (attention-masked mean), normalization and 256-token
-    limit as sentence-transformers, without installing PyTorch. That keeps the
-    Streamlit Cloud install small and fast. The model (~90 MB) downloads once
-    to ~/.cache/chroma on first use.
+
+@dataclass(frozen=True)
+class ModelSpec:
+    name: str
+    # Prepended to queries only. BGE was trained with this instruction for
+    # short-query -> passage retrieval; documents are embedded without it.
+    query_prefix: str = ""
+    revision: str | None = None
+
+
+MODELS: dict[str, ModelSpec] = {
+    "all-MiniLM-L6-v2": ModelSpec("all-MiniLM-L6-v2"),
+    "BAAI/bge-small-en-v1.5": ModelSpec(
+        "BAAI/bge-small-en-v1.5",
+        query_prefix="Represent this sentence for searching relevant passages: ",
+        revision="5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    ),
+}
+
+_ENCODERS: dict[str, Embedder] = {}
+
+
+class OnnxClsEncoder:
+    """BERT-style ONNX encoder: CLS-token pooling + L2 normalization (the BGE recipe).
+
+    Runs on onnxruntime + tokenizers (both installed with chromadb), so no PyTorch.
     """
+
+    def __init__(self, session, tokenizer, max_length: int = 512, batch_size: int = 32):
+        self.session = session
+        self.tokenizer = tokenizer
+        self.tokenizer.enable_truncation(max_length=max_length)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]")
+        self.batch_size = batch_size
+        self.input_names = {item.name for item in session.get_inputs()}
+        outputs = [item.name for item in session.get_outputs()]
+        self.output_name = "last_hidden_state" if "last_hidden_state" in outputs else outputs[0]
+
+    @classmethod
+    def from_hub(cls, repo_id: str, revision: str | None = None) -> "OnnxClsEncoder":
+        import onnxruntime as ort
+        from huggingface_hub import hf_hub_download
+        from tokenizers import Tokenizer
+
+        model_path = hf_hub_download(repo_id, "onnx/model.onnx", revision=revision)
+        tokenizer = Tokenizer.from_file(hf_hub_download(repo_id, "tokenizer.json", revision=revision))
+        session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+        return cls(session, tokenizer)
+
+    def __call__(self, texts: Sequence[str]) -> np.ndarray:
+        texts = list(texts)
+        vectors: list[np.ndarray | None] = [None] * len(texts)
+        # Encode texts of similar length together so batches carry little padding.
+        order = sorted(range(len(texts)), key=lambda i: len(texts[i]))
+        for start in range(0, len(order), self.batch_size):
+            rows = order[start : start + self.batch_size]
+            encodings = self.tokenizer.encode_batch([texts[i] for i in rows])
+            ids = np.asarray([e.ids for e in encodings], dtype=np.int64)
+            feeds = {
+                "input_ids": ids,
+                "attention_mask": np.asarray([e.attention_mask for e in encodings], dtype=np.int64),
+            }
+            if "token_type_ids" in self.input_names:
+                feeds["token_type_ids"] = np.zeros_like(ids)
+            hidden = self.session.run([self.output_name], feeds)[0]
+            cls_vectors = np.asarray(hidden[:, 0, :], dtype=np.float32)
+            cls_vectors /= np.clip(np.linalg.norm(cls_vectors, axis=1, keepdims=True), 1e-12, None)
+            for row, index in enumerate(rows):
+                vectors[index] = cls_vectors[row]
+        return np.stack(vectors) if vectors else np.zeros((0, 0), dtype=np.float32)
+
+
+def _minilm() -> Embedder:
+    """all-MiniLM-L6-v2 through Chroma's bundled ONNX build (mean pooling, normalized)."""
     from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
     model = ONNXMiniLM_L6_V2()
+    return lambda texts: np.asarray(model(list(texts)), dtype=np.float32)
 
-    def embed(texts: Sequence[str]) -> np.ndarray:
-        return np.asarray(model(list(texts)), dtype=np.float32)
 
-    return embed
+def document_embedder(model_name: str = DEFAULT_MODEL) -> Embedder:
+    """Embedder for documents. Downloads the model on first use and caches it."""
+    if model_name not in MODELS:
+        raise ValueError(f"Unknown model {model_name!r}; choose from {sorted(MODELS)}")
+    if model_name not in _ENCODERS:
+        spec = MODELS[model_name]
+        _ENCODERS[model_name] = _minilm() if model_name == "all-MiniLM-L6-v2" else OnnxClsEncoder.from_hub(
+            spec.name, spec.revision
+        )
+    return _ENCODERS[model_name]
+
+
+def query_embedder(model_name: str = DEFAULT_MODEL, prefix: str | None = None) -> Embedder:
+    """Embedder for queries: the document embedder plus the model's query instruction."""
+    encode = document_embedder(model_name)
+    instruction = MODELS[model_name].query_prefix if prefix is None else prefix
+    return lambda texts: encode([instruction + text for text in texts])

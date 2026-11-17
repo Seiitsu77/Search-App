@@ -1,6 +1,7 @@
-# Builds the Chroma index on a GitHub runner, checks it with real queries, and
-# commits chromadb/ + data/anime_meta.json back to the branch. Streamlit
-# Community Cloud then redeploys the app from the new commit.
+# Builds the Chroma index on a GitHub runner, scores it on queries with known
+# answers against the index it replaces, and commits chromadb/ +
+# data/anime_meta.json + data/evaluation.json back to the branch if search
+# quality did not drop. Streamlit Community Cloud then redeploys from the commit.
 name: Build search index
 
 on:
@@ -8,7 +9,7 @@ on:
     paths:
       - build_index.py
       - search_core.py
-      - smoke_test.py
+      - evaluate.py
       - requirements.txt
       - .github/workflows/build-index.yml
   workflow_dispatch:
@@ -23,7 +24,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -38,11 +39,22 @@ jobs:
       - name: Unit tests
         run: pytest -q
 
+      - name: Score the current index (baseline)
+        run: |
+          if [ -f chromadb/chroma.sqlite3 ]; then
+            python evaluate.py --out "$RUNNER_TEMP/baseline.json"
+          else
+            echo "No committed index yet; skipping the baseline."
+          fi
+
       - name: Chunk, embed and store in Chroma
         run: python build_index.py
 
-      - name: Smoke test with real queries
-        run: python smoke_test.py
+      - name: Score the new index (fails if MRR@10 drops)
+        run: python evaluate.py --out data/evaluation.json --baseline "$RUNNER_TEMP/baseline.json"
+
+      - name: Score the new index without the query instruction (for comparison)
+        run: python evaluate.py --query-prefix ""
 
       - name: Commit the index
         run: |

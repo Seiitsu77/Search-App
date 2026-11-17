@@ -3,7 +3,7 @@
 Steps (matching the course starter notebook):
   1. Pick a dataset   - the Anime Compass catalog (18k titles, CC0 MyAnimeList data)
   2. Chunk + embed    - sentence windows of each synopsis, embedded with a
-                        title/genre header in front, all-MiniLM-L6-v2
+                        title/genre header in front (default model: BAAI/bge-small-en-v1.5)
   3. Store in Chroma  - persistent collection written to ./chromadb, plus
                         data/anime_meta.json (one row of display fields per anime)
 
@@ -27,9 +27,10 @@ from search_core import (
     CHUNK_CHARS,
     DEFAULT_DB_DIR,
     DEFAULT_META_PATH,
-    MODEL_NAME,
+    DEFAULT_MODEL,
+    MODELS,
     build_chunks,
-    minilm_embedder,
+    document_embedder,
     write_index,
 )
 
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--db-dir", type=Path, default=DEFAULT_DB_DIR)
     parser.add_argument("--meta-path", type=Path, default=DEFAULT_META_PATH)
     parser.add_argument("--max-chars", type=int, default=CHUNK_CHARS, help="max characters per chunk")
+    parser.add_argument("--model", default=DEFAULT_MODEL, choices=sorted(MODELS), help="embedding model")
     args = parser.parse_args(argv)
 
     catalog = load_catalog(args.catalog_file)
@@ -77,17 +79,26 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.db_dir.exists():
         shutil.rmtree(args.db_dir)
-    print(f"Loading {MODEL_NAME} ...")
-    embed = minilm_embedder()
+    print(f"Loading {args.model} ...")
+    embed = document_embedder(args.model)
 
     started = time.perf_counter()
 
     def progress(done: int, total: int) -> None:
-        if done == total or done % 5120 < 256:
+        if done == total or done % 5120 < 1024:
             rate = done / max(time.perf_counter() - started, 1e-6)
             print(f"  embedded {done:,}/{total:,} chunks ({rate:,.0f}/s)", flush=True)
 
-    collection = write_index(chunks, records, embed, db_dir=args.db_dir, meta_path=args.meta_path, progress=progress)
+    collection = write_index(
+        chunks,
+        records,
+        embed,
+        db_dir=args.db_dir,
+        meta_path=args.meta_path,
+        batch_size=1024,  # bigger batches let the encoder group similar lengths
+        progress=progress,
+        model_name=args.model,
+    )
     print(f"Stored {collection.count():,} chunks in {args.db_dir} in {time.perf_counter() - started:.0f}s")
 
     sizes = dir_size_mb(args.db_dir)

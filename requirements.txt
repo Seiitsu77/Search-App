@@ -1,7 +1,9 @@
 streamlit==1.67.0
-# The Chroma version must match the one that built ./chromadb. It also ships
-# onnxruntime + tokenizers, which run the all-MiniLM-L6-v2 embedding model.
+# The Chroma version must match the one that built ./chromadb.
 chromadb==1.5.9
-numpy
-# build_index.py only: downloads the catalog from the Hugging Face dataset.
+# Run the BAAI/bge-small-en-v1.5 embedding model (ONNX, no PyTorch) and fetch
+# it and the catalog from Hugging Face. chromadb already depends on the first two.
+onnxruntime
+tokenizers
 huggingface_hub
+numpy

@@ -154,3 +154,112 @@ def test_similar_and_title_resolution(tmp_path, embedder):
     assert {hit.anime_id for hit in engine.similar_to(1535, k=5, filters=Filters(types=["TV"]))} == {16498, 5}
     assert engine.popular_titles(2) == ["Death Note", "Shingeki no Kyojin"]
     assert "Action" in engine.all_genres() and "TV" in engine.all_types()
+
+
+# -- embedding models -----------------------------------------------------------
+
+import numpy as np  # noqa: E402
+import pytest  # noqa: E402
+
+import search_core  # noqa: E402
+from search_core import OnnxClsEncoder, query_embedder  # noqa: E402
+
+
+class _Named:
+    def __init__(self, name):
+        self.name = name
+
+
+class StubSession:
+    """Mimics onnxruntime.InferenceSession: CLS row = [real token count, 1, 0], other rows noise."""
+
+    def __init__(self):
+        self.feeds = []
+
+    def get_inputs(self):
+        return [_Named("input_ids"), _Named("attention_mask"), _Named("token_type_ids")]
+
+    def get_outputs(self):
+        return [_Named("last_hidden_state"), _Named("pooler_output")]
+
+    def run(self, names, feeds):
+        assert names == ["last_hidden_state"]
+        self.feeds.append(feeds)
+        batch, seq = feeds["input_ids"].shape
+        hidden = np.full((batch, seq, 3), 7.0, dtype=np.float32)
+        hidden[:, 0, 0] = feeds["attention_mask"].sum(axis=1)
+        hidden[:, 0, 1] = 1.0
+        hidden[:, 0, 2] = 0.0
+        return [hidden]
+
+
+def tiny_tokenizer():
+    from tokenizers import Tokenizer
+    from tokenizers.models import WordLevel
+    from tokenizers.pre_tokenizers import Whitespace
+    from tokenizers.processors import TemplateProcessing
+
+    vocab = {"[PAD]": 0, "[CLS]": 1, "[UNK]": 2, "a": 3, "b": 4, "c": 5}
+    tokenizer = Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = Whitespace()
+    tokenizer.post_processor = TemplateProcessing(single="[CLS] $A", special_tokens=[("[CLS]", 1)])
+    return tokenizer
+
+
+def test_onnx_cls_encoder_pools_normalizes_and_keeps_order():
+    session = StubSession()
+    encoder = OnnxClsEncoder(session, tiny_tokenizer(), batch_size=2)
+    texts = ["a b c a b", "a", "a b c", "b c"]  # 5, 1, 3, 2 words
+    vectors = encoder(texts)
+
+    assert vectors.shape == (4, 3)
+    np.testing.assert_allclose(np.linalg.norm(vectors, axis=1), 1.0, rtol=1e-6)
+    # Row i must come from text i: the first component encodes its token count (+1 for CLS).
+    for text, vector in zip(texts, vectors):
+        expected = np.array([len(text.split()) + 1, 1.0, 0.0])
+        np.testing.assert_allclose(vector, expected / np.linalg.norm(expected), rtol=1e-6)
+    # Batched by length (2 batches of 2), padded within a batch, token types all zero.
+    assert len(session.feeds) == 2
+    for feeds in session.feeds:
+        assert feeds["input_ids"].shape == feeds["attention_mask"].shape
+        assert not feeds["token_type_ids"].any()
+    assert sorted(feeds["input_ids"].shape[1] for feeds in session.feeds) == [3, 6]
+
+
+def test_query_embedder_prefixes_queries_only(monkeypatch):
+    seen = []
+
+    def fake_encoder(texts):
+        seen.extend(texts)
+        return np.ones((len(texts), 2), dtype=np.float32)
+
+    monkeypatch.setitem(search_core._ENCODERS, "BAAI/bge-small-en-v1.5", fake_encoder)
+    query_embedder("BAAI/bge-small-en-v1.5")(["cozy camping"])
+    query_embedder("BAAI/bge-small-en-v1.5", prefix="")(["no prefix"])
+    search_core.document_embedder("BAAI/bge-small-en-v1.5")(["a document"])
+    assert seen == [
+        "Represent this sentence for searching relevant passages: cozy camping",
+        "no prefix",
+        "a document",
+    ]
+    with pytest.raises(ValueError):
+        search_core.document_embedder("not-a-model")
+
+
+def test_index_records_its_model(tmp_path, embedder):
+    write_index(
+        *build_chunks(CATALOG), embedder, db_dir=tmp_path / "db", meta_path=tmp_path / "meta.json", model_name="BAAI/bge-small-en-v1.5"
+    )
+    engine = AnimeSearchEngine.load(embedder, db_dir=tmp_path / "db", meta_path=tmp_path / "meta.json")
+    assert engine.model_name == "BAAI/bge-small-en-v1.5"
+
+
+def test_evaluation_scoring():
+    from evaluate import CASES, first_hit_rank, summarize
+
+    assert first_hit_rank(["Haikyuu!! Movie", "x"], ["Haikyuu"]) == 1
+    assert first_hit_rank(["x", "Fate/Zero"], ["Fate/"]) == 2
+    assert first_hit_rank(["x"], ["Death Note"]) is None
+    scores = summarize([1, 3, None, 10])
+    assert scores == {"hit@1": 0.25, "hit@5": 0.5, "hit@10": 0.75, "mrr@10": pytest.approx((1 + 1 / 3 + 0.1) / 4)}
+    assert len({query for _, query, _ in CASES}) == len(CASES)
