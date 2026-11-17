@@ -25,16 +25,16 @@ from search_core import (
 
 st.set_page_config(page_title="Anime Compass Search", page_icon="🧭", layout="wide")
 
-# Each example was checked on the deployed app: the show it describes ranks in the top 3.
+# Each example ranks the show it describes #1 in evaluate.py (data/evaluation.json).
 EXAMPLES = [
     "humanity lives behind giant walls to hide from man-eating giants",
-    "a student finds a notebook that kills anyone whose name is written in it",
-    "a scientist builds a microwave that sends messages to the past",
-    "a high school volleyball team with a short middle blocker who can jump really high",
-    "a boy who can see spirits and youkai inherits a book of their names",
+    "space cowboys and jazz music",
+    "cozy camping anime with cute girls",
+    "time travel thriller with a microwave",
     "a mother raises two children who can turn into wolves",
-    "a salaryman is reincarnated in another world as a slime",
-    "a cooking competition where every dish is a battle",
+    "basketball anime with an invisible phantom sixth man",
+    "a spy, an assassin and a telepathic girl pretend to be a family",
+    "cooking battles at an elite culinary school",
 ]
 
 
@@ -159,7 +159,7 @@ with search_tab:
     query = st.text_input(
         "What are you in the mood for?",
         key="query",
-        placeholder="e.g. a pirate crew sails the sea searching for a legendary treasure",
+        placeholder="e.g. a rubber boy sets out to sea to find the legendary treasure and become king of the pirates",
     )
     st.pills("Try one", EXAMPLES, key="example", on_change=use_example)
     if not type_sel:

@@ -1,7 +1,7 @@
 # 🧭 Anime Compass Search
 
 A semantic search engine for anime. Describe a plot, a vibe or a theme in your own words
-("a scientist builds a microwave that sends messages to the past", "a mother raises two children who can turn into wolves") and it finds anime
+("space cowboys and jazz music", "a mother raises two children who can turn into wolves") and it finds anime
 whose synopses *mean* the same thing, even when they share no keywords with your query.
 
 Built for AIPI 510 Interactive #2 (*Build Your Own Semantic Search Engine*), following the course
@@ -70,6 +70,17 @@ cowboys and jazz music"). It searches with the app's default settings and report
 right show is in the top k) and MRR@10. Every index rebuild scores the old index and the new
 one, and the new index is committed only if MRR@10 does not drop. The latest scores are in
 `data/evaluation.json`.
+
+| Model | hit@1 | hit@5 | hit@10 | MRR@10 | MRR@10 synopsis-style | MRR@10 fan-style |
+|---|---|---|---|---|---|---|
+| all-MiniLM-L6-v2 (starter notebook) | 0.447 | 0.632 | 0.658 | 0.517 | **0.587** | 0.420 |
+| bge-small-en-v1.5 without query instruction | 0.500 | 0.605 | 0.658 | 0.549 | 0.532 | 0.573 |
+| **bge-small-en-v1.5 (deployed)** | **0.526** | **0.658** | **0.684** | **0.579** | 0.570 | **0.591** |
+
+BGE's gain comes almost entirely from fan-style queries (MRR 0.42 → 0.59). On synopsis-style
+queries the two models are about even. Some shows are still missed by both models, for
+example Kimetsu no Yaiba, AnoHana, Evangelion and Yakusoku no Neverland. Median query time is
+about 0.1 s on a CPU.
 
 ## Files
 
