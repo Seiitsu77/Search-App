@@ -1,0 +1,452 @@
+{
+  "model": "BAAI/bge-small-en-v1.5",
+  "overall": {
+    "hit@1": 0.5263157894736842,
+    "hit@5": 0.6578947368421053,
+    "hit@10": 0.6842105263157895,
+    "mrr@10": 0.5787280701754386
+  },
+  "by_style": {
+    "synopsis": {
+      "hit@1": 0.5,
+      "hit@5": 0.6818181818181818,
+      "hit@10": 0.6818181818181818,
+      "mrr@10": 0.5696969696969697
+    },
+    "fan": {
+      "hit@1": 0.5625,
+      "hit@5": 0.625,
+      "hit@10": 0.6875,
+      "mrr@10": 0.5911458333333334
+    }
+  },
+  "median_ms": 110.51302100008797,
+  "cases": [
+    {
+      "style": "synopsis",
+      "query": "humanity lives behind giant walls to hide from man-eating giants",
+      "rank": 1,
+      "top3": [
+        "Shingeki no Kyojin",
+        "God Eater",
+        "Kishin Taisen Gigantic Formula"
+      ],
+      "ms": 272.5007729998197
+    },
+    {
+      "style": "synopsis",
+      "query": "a student finds a notebook that kills anyone whose name is written in it",
+      "rank": 1,
+      "top3": [
+        "Death Note",
+        "R.O.D: Read or Die",
+        "Another"
+      ],
+      "ms": 108.84270399992602
+    },
+    {
+      "style": "synopsis",
+      "query": "two brothers use alchemy to try to get their bodies back after a failed transmutation",
+      "rank": 1,
+      "top3": [
+        "Fullmetal Alchemist: Brotherhood",
+        "Fullmetal Alchemist",
+        "Dan Dao Zongshi"
+      ],
+      "ms": 110.8340880000469
+    },
+    {
+      "style": "synopsis",
+      "query": "a self-proclaimed mad scientist sends text messages to the past with a microwave",
+      "rank": 1,
+      "top3": [
+        "Steins;Gate",
+        "Ghost Messenger",
+        "Summer Wars"
+      ],
+      "ms": 127.15553199996066
+    },
+    {
+      "style": "synopsis",
+      "query": "a short boy dreams of becoming a great volleyball player like the little giant",
+      "rank": 1,
+      "top3": [
+        "Haikyuu!!",
+        "Miracle Giants Doumu-kun",
+        "Kougyou Aika Volley Boys"
+      ],
+      "ms": 109.6387559998675
+    },
+    {
+      "style": "synopsis",
+      "query": "a boy who can see spirits and youkai inherits a book of their names",
+      "rank": 2,
+      "top3": [
+        "Kiitarou Shounen no Youkai Enikki",
+        "Natsume Yuujinchou Shichi",
+        "Natsume Yuujinchou"
+      ],
+      "ms": 117.64873700008138
+    },
+    {
+      "style": "synopsis",
+      "query": "a mother raises two children who can turn into wolves",
+      "rank": 1,
+      "top3": [
+        "Ookami Kodomo no Ame to Yuki",
+        "Clevatess: Majuu no Ou to Akago to Shikabane no Yuusha",
+        "Tsuki no Mine no Ookami"
+      ],
+      "ms": 113.05779799999982
+    },
+    {
+      "style": "synopsis",
+      "query": "a salaryman is reincarnated in another world as a slime",
+      "rank": 5,
+      "top3": [
+        "Seija Musou: Salaryman, Isekai de Ikinokoru Tame ni Ayumu Michi",
+        "Slime Taoshite 300-nen, Shiranai Uchi ni Level Max ni Nattemashita",
+        "Warui no wo Taose!! Salaryman Man"
+      ],
+      "ms": 103.69783900000584
+    },
+    {
+      "style": "synopsis",
+      "query": "a boy becomes a demon slayer to turn his sister back into a human",
+      "rank": null,
+      "top3": [
+        "Xiao Mo Tou Baolu La!",
+        "Onikirimaru",
+        "Toukiden: The Age of Demons - Introduction"
+      ],
+      "ms": 119.3625680000423
+    },
+    {
+      "style": "synopsis",
+      "query": "childhood friends reunite years later to help the ghost of a girl who died",
+      "rank": null,
+      "top3": [
+        "Corpse Party: Missing Footage",
+        "Corpse Party: Tortured Souls - Bougyakusareta Tamashii no Jukyou",
+        "Re-Kan!"
+      ],
+      "ms": 106.29732200004582
+    },
+    {
+      "style": "synopsis",
+      "query": "two girls travel through the ruins of civilization after the end of the world",
+      "rank": null,
+      "top3": [
+        "Arata naru Sekai: World's/Start/Load/End",
+        "Shuumatsu Touring",
+        "Escha Chron"
+      ],
+      "ms": 107.80399399982343
+    },
+    {
+      "style": "synopsis",
+      "query": "a pianist stopped playing after his mother died until he meets a free-spirited violinist",
+      "rank": null,
+      "top3": [
+        "ClassicaLoid",
+        "Detective Conan Movie 12: Full Score of Fear",
+        "Pianoman"
+      ],
+      "ms": 113.75779200011493
+    },
+    {
+      "style": "synopsis",
+      "query": "a wandering swordsman who was once a feared assassin vows never to kill again",
+      "rank": 2,
+      "top3": [
+        "Blade of the Immortal",
+        "Rurouni Kenshin: Meiji Kenkaku Romantan",
+        "Grandeek"
+      ],
+      "ms": 111.67112299995097
+    },
+    {
+      "style": "synopsis",
+      "query": "a girl goes camping alone near Mount Fuji and meets another girl who loves the outdoors",
+      "rank": 1,
+      "top3": [
+        "Yuru Camp△",
+        "Yuru Camp△ Season 2",
+        "Yuru Camp△ Season 2 Specials"
+      ],
+      "ms": 113.51122199994279
+    },
+    {
+      "style": "synopsis",
+      "query": "a boy is summoned by his father to pilot a giant robot and fight beings called angels",
+      "rank": null,
+      "top3": [
+        "Astro Boy: Tetsuwan Atom",
+        "Robot Atom",
+        "Ariel Visual"
+      ],
+      "ms": 109.73126799990496
+    },
+    {
+      "style": "synopsis",
+      "query": "bounty hunters on a spaceship in 2071 after Earth's surface became uninhabitable",
+      "rank": 1,
+      "top3": [
+        "Cowboy Bebop",
+        "Virgin Punk: Clockwork Girl",
+        "Element Hunters"
+      ],
+      "ms": 115.20622199986974
+    },
+    {
+      "style": "synopsis",
+      "query": "a high school girl in a rural town and a boy in Tokyo swap bodies in their dreams",
+      "rank": 1,
+      "top3": [
+        "Kimi no Na wa.",
+        "Candy Boy: Nonchalant Talk of the Certain Twin Sisters in Daily Life",
+        "Hiatari Ryoukou!"
+      ],
+      "ms": 111.72838500010585
+    },
+    {
+      "style": "synopsis",
+      "query": "a rubber boy sets out to sea to find the legendary treasure and become king of the pirates",
+      "rank": 1,
+      "top3": [
+        "One Piece",
+        "Kaizoku Ouji",
+        "One Piece: Episode of East Blue - Luffy to 4-nin no Nakama no Daibouken"
+      ],
+      "ms": 104.02013299994906
+    },
+    {
+      "style": "synopsis",
+      "query": "players are trapped in a virtual reality MMORPG where dying in the game means dying in real life",
+      "rank": 3,
+      "top3": [
+        ".hack//Liminality",
+        ".hack//Roots",
+        "Sword Art Online"
+      ],
+      "ms": 128.16839900006016
+    },
+    {
+      "style": "synopsis",
+      "query": "a girl works at a bathhouse for spirits to save her parents who were turned into pigs",
+      "rank": null,
+      "top3": [
+        "Mahou Shoujo Site",
+        "Mahou no Angel Sweet Mint",
+        "Gunslinger Girl"
+      ],
+      "ms": 110.86681200004023
+    },
+    {
+      "style": "synopsis",
+      "query": "orphans at an idyllic orphanage discover they are being raised as food for demons",
+      "rank": null,
+      "top3": [
+        "Tactics",
+        "Xiao Mo Tou Baolu La!",
+        "Onita no Boushi"
+      ],
+      "ms": 108.90960799997629
+    },
+    {
+      "style": "synopsis",
+      "query": "a hero can defeat any enemy with a single punch and is bored because nobody challenges him",
+      "rank": 1,
+      "top3": [
+        "One Punch Man",
+        "No Game No Life: Zero",
+        "One Outs"
+      ],
+      "ms": 107.72158300005685
+    },
+    {
+      "style": "fan",
+      "query": "space cowboys and jazz music",
+      "rank": 1,
+      "top3": [
+        "Cowboy Bebop",
+        "Space Cobra",
+        "Gingirl"
+      ],
+      "ms": 112.13733799991132
+    },
+    {
+      "style": "fan",
+      "query": "depressing mecha anime about kids piloting robots",
+      "rank": null,
+      "top3": [
+        "Chou Kidou Densetsu DinaGiga",
+        "Kanai",
+        "Robot King"
+      ],
+      "ms": 101.8028740002137
+    },
+    {
+      "style": "fan",
+      "query": "cozy camping anime with cute girls",
+      "rank": 1,
+      "top3": [
+        "Yuru Camp△",
+        "Yuru Yuri Nachuyachumi!",
+        "Yuru Camp△ Season 2 Specials"
+      ],
+      "ms": 104.10932700006015
+    },
+    {
+      "style": "fan",
+      "query": "sad anime about the ghost of a dead childhood friend",
+      "rank": 8,
+      "top3": [
+        "Kyoufu Shinbun (2014)",
+        "Natsume Yuujinchou",
+        "Corpse Party: Tortured Souls - Bougyakusareta Tamashii no Jukyou"
+      ],
+      "ms": 102.2989170000983
+    },
+    {
+      "style": "fan",
+      "query": "time travel thriller with a microwave",
+      "rank": 1,
+      "top3": [
+        "Steins;Gate",
+        "Yojouhan Time Machine Blues",
+        "Arve Rezzle: Kikaijikake no Yousei-tachi"
+      ],
+      "ms": 101.7506340001546
+    },
+    {
+      "style": "fan",
+      "query": "cute girls start a band in the high school light music club",
+      "rank": 1,
+      "top3": [
+        "K-On!",
+        "K-On!!",
+        "K-On! Movie"
+      ],
+      "ms": 105.72144900015701
+    },
+    {
+      "style": "fan",
+      "query": "cooking battles at an elite culinary school",
+      "rank": 1,
+      "top3": [
+        "Shokugeki no Souma",
+        "Shokugeki no Souma: Shin no Sara",
+        "Shokugeki no Souma: San no Sara - Tootsuki Ressha-hen"
+      ],
+      "ms": 108.1952839999758
+    },
+    {
+      "style": "fan",
+      "query": "isekai where the main character is an undead skeleton overlord",
+      "rank": null,
+      "top3": [
+        "Saikyou Onmyouji no Isekai Tenseiki",
+        "Mushoku Tensei: Isekai Ittara Honki Dasu Part 2",
+        "Mushoku Tensei: Isekai Ittara Honki Dasu - Eris no Goblin Toubatsu"
+      ],
+      "ms": 113.49130100006732
+    },
+    {
+      "style": "fan",
+      "query": "basketball anime with an invisible phantom sixth man",
+      "rank": 1,
+      "top3": [
+        "Kuroko no Basket",
+        "Slam Dunk: Hoero Basketman-damashii! Hanamichi to Rukawa no Atsuki Natsu",
+        "Diamond no Ace"
+      ],
+      "ms": 109.4990679998773
+    },
+    {
+      "style": "fan",
+      "query": "mages and their heroic spirits fight a battle royale for the holy grail",
+      "rank": 1,
+      "top3": [
+        "Fate/stay night: Unlimited Blade Works",
+        "Fate/Apocrypha",
+        "Fate/stay night Movie: Heaven's Feel - I. Presage Flower"
+      ],
+      "ms": 105.568207000033
+    },
+    {
+      "style": "fan",
+      "query": "a spy, an assassin and a telepathic girl pretend to be a family",
+      "rank": 1,
+      "top3": [
+        "Spy x Family Season 2",
+        "Spy x Family",
+        "Spy x Family Season 3"
+      ],
+      "ms": 106.92195099977653
+    },
+    {
+      "style": "fan",
+      "query": "romantic comedy where two geniuses each try to make the other confess first",
+      "rank": null,
+      "top3": [
+        "Rikei ga Koi ni Ochita no de Shoumei shitemita.",
+        "Acchi Kocchi (TV)",
+        "Kiss x Sis"
+      ],
+      "ms": 115.11204700013877
+    },
+    {
+      "style": "fan",
+      "query": "dark fantasy about a mercenary with a giant sword seeking revenge",
+      "rank": null,
+      "top3": [
+        "Grandeek",
+        "Seiken no Blacksmith",
+        "Garo: Honoo no Kokuin"
+      ],
+      "ms": 105.61509800004387
+    },
+    {
+      "style": "fan",
+      "query": "a teen detective is shrunk into a child by a poison",
+      "rank": null,
+      "top3": [
+        "Detective Conan",
+        "Ranpo Kitan: Game of Laplace",
+        "Trickster: Edogawa Ranpo \"Shounen Tanteidan\" yori"
+      ],
+      "ms": 112.33879699989302
+    },
+    {
+      "style": "fan",
+      "query": "a psychic middle schooler suppresses his powers until his emotions hit 100 percent",
+      "rank": 1,
+      "top3": [
+        "Mob Psycho 100",
+        "Psychic Hero",
+        "Telepathy Shoujo Ran"
+      ],
+      "ms": 110.51302100008797
+    },
+    {
+      "style": "fan",
+      "query": "a former child soldier writes letters for people while learning what love means",
+      "rank": 3,
+      "top3": [
+        "Tegami",
+        "Ame to Shoujo to Watashi no Tegami",
+        "Violet Evergarden: Kitto \"Ai\" wo Shiru Hi ga Kuru no Darou"
+      ],
+      "ms": 117.1089239999219
+    }
+  ],
+  "query_prefix": null,
+  "more_like_death_note": [
+    "Death Note: Rewrite",
+    "Shingetsutan Tsukihime",
+    "Detective Conan",
+    "Dies Irae",
+    "Zombie-Loan"
+  ]
+}
