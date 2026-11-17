@@ -27,15 +27,16 @@ st.set_page_config(page_title="Anime Compass Search", page_icon="🧭", layout="
 
 POPULARITY_WEIGHT = 0.05
 DEFAULT_EXCLUDED_TYPES = {"Music", "Unknown"}
+# Each example was checked on the deployed app: the show it describes ranks in the top 3.
 EXAMPLES = [
-    "space bounty hunters drifting through the solar system to a jazz soundtrack",
-    "a high school volleyball team with a short middle blocker who can jump really high",
-    "teenagers forced to pilot giant robots while dealing with depression",
-    "girls go camping in winter and cook food outdoors",
+    "humanity lives behind giant walls to hide from man-eating giants",
+    "a student finds a notebook that kills anyone whose name is written in it",
     "a scientist builds a microwave that sends messages to the past",
-    "two girls wander a ruined post-apocalyptic city on a small tank",
+    "a high school volleyball team with a short middle blocker who can jump really high",
+    "a boy who can see spirits and youkai inherits a book of their names",
+    "a mother raises two children who can turn into wolves",
+    "a salaryman is reincarnated in another world as a slime",
     "a cooking competition where every dish is a battle",
-    "a lonely ghost girl who can't move on until her childhood friends reunite",
 ]
 
 
@@ -159,7 +160,7 @@ with search_tab:
     query = st.text_input(
         "What are you in the mood for?",
         key="query",
-        placeholder="e.g. a samurai with a cross-shaped scar who has sworn never to kill again",
+        placeholder="e.g. a pirate crew sails the sea searching for a legendary treasure",
     )
     st.pills("Try one", EXAMPLES, key="example", on_change=use_example)
     if not type_sel:

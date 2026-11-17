@@ -1,7 +1,7 @@
 # 🧭 Anime Compass Search
 
 A semantic search engine for anime. Describe a plot, a vibe or a theme in your own words
-("space bounty hunters with a jazz soundtrack", "girls go camping in winter") and it finds anime
+("a scientist builds a microwave that sends messages to the past", "a mother raises two children who can turn into wolves") and it finds anime
 whose synopses *mean* the same thing, even when they share no keywords with your query.
 
 Built for AIPI 510 Interactive #2 (*Build Your Own Semantic Search Engine*), following the course
